@@ -1,64 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:invoice_app/forms/invoice_form.dart';
-import 'package:invoice_app/models/invoice_model.dart';
+import '../models/invoice_model.dart';
 import 'invoice_details_screen.dart';
 
+// ignore: use_key_in_widget_constructors
 class InvoiceList extends StatefulWidget {
-  const InvoiceList({super.key});
-
   @override
   // ignore: library_private_types_in_public_api
   _InvoiceListState createState() => _InvoiceListState();
 }
 
 class _InvoiceListState extends State<InvoiceList> {
-  final List<Invoice> _invoices = [
-    Invoice(
-      client: 'Nelson Kioko',
-      items: [
-        InvoiceItem()
-          ..description = 'Item 1'
-          ..quantity = 2
-          ..price = 10.0,
-        InvoiceItem()
-          ..description = 'Item 2'
-          ..quantity = 1
-          ..price = 20.0,
-      ],
-      tax: 2.5,
-      date: DateTime.now(),
-    ),
-    Invoice(
-      client: 'Eric Client',
-      items: [
-        InvoiceItem()
-          ..description = 'Item 1'
-          ..quantity = 5
-          ..price = 10.0,
-        InvoiceItem()
-          ..description = 'Item 2'
-          ..quantity = 1
-          ..price = 20.0,
-      ],
-      tax: 2.5,
-      date: DateTime.now(),
-    ),
-    Invoice(
-      client: 'Raymond client',
-      items: [
-        InvoiceItem()
-          ..description = 'Item A'
-          ..quantity = 3
-          ..price = 5.0,
-        InvoiceItem()
-          ..description = 'Item B'
-          ..quantity = 1
-          ..price = 15.0,
-      ],
-      tax: 1.0,
-      date: DateTime.now().subtract(const Duration(days: 7)),
-    ),
-  ];
+  late Box<Invoice> invoiceBox;
+
+  @override
+  void initState() {
+    super.initState();
+    invoiceBox = Hive.box<Invoice>('invoices');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,35 +32,52 @@ class _InvoiceListState extends State<InvoiceList> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => InvoiceForm(
-                          invoices: _invoices,
-                          onInvoiceAdded: (invoice) {},
-                        )),
+                  builder: (context) => InvoiceForm(
+                    onInvoiceAdded: (invoice) {
+                      setState(() {
+                        invoiceBox.add(invoice);
+                      });
+                    },
+                  ),
+                ),
               );
             },
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: _invoices.length,
-        itemBuilder: (context, index) {
-          final invoice = _invoices[index];
-          return Padding(
-            padding: const EdgeInsets.only(top: 20, right: 78.0, left: 78.0),
-            child: Card(
-              child: ListTile(
-                title: Text(invoice.client),
-                subtitle: Text(
-                    '${invoice.date} - KES ${invoice.total.toStringAsFixed(2)}'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => InvoiceDetails(invoice: invoice)),
-                  );
-                },
-              ),
-            ),
+      body: ValueListenableBuilder(
+        valueListenable: invoiceBox.listenable(),
+        builder: (context, Box<Invoice> box, _) {
+          if (box.values.isEmpty) {
+            return const Center(child: Text('No invoices added.'));
+          }
+
+          return ListView.builder(
+            itemCount: box.values.length,
+            itemBuilder: (context, index) {
+              final invoice = box.getAt(index);
+              return Padding(
+                padding:
+                    const EdgeInsets.only(top: 20, right: 78.0, left: 78.0),
+                child: Card(
+                  child: ListTile(
+                    title: Text(invoice!.client),
+                    subtitle: Text(
+                      '${invoice.date} - KES ${invoice.total.toStringAsFixed(2)}',
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              InvoiceDetails(invoice: invoice),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

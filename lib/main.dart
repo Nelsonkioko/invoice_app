@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:invoice_app/models/invoice_model.dart';
+import 'package:invoice_app/repository/invoice_repository.dart';
 import 'package:invoice_app/screens/invoice_list.dart';
+import 'package:overlay_support/overlay_support.dart';
 
-void main() {
-  runApp(const InvoiceApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(InvoiceAdapter());
+  Hive.registerAdapter(InvoiceItemAdapter());
+  await Hive.openBox<Invoice>('invoices');
+  // Pre-load data from JSON
+  await InvoiceDataManager.preloadDataFromJson();
+
+  runApp(const OverlaySupport.global(child: InvoiceApp()));
 }
 
 class InvoiceApp extends StatelessWidget {

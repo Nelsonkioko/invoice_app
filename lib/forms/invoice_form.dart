@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import '/widgets/invoice_item_widget.dart';
-import '/models/invoice_model.dart';
+import 'package:invoice_app/models/invoice_model.dart';
+import 'package:invoice_app/widgets/invoice_item_widget.dart';
+import 'package:overlay_support/overlay_support.dart';
 
 class InvoiceForm extends StatefulWidget {
-  final List<Invoice> invoices;
   final Function(Invoice) onInvoiceAdded;
 
-  const InvoiceForm(
-      {Key? key, required this.invoices, required this.onInvoiceAdded})
-      : super(key: key);
+  const InvoiceForm({Key? key, required this.onInvoiceAdded}) : super(key: key);
+
   @override
   // ignore: library_private_types_in_public_api
   _InvoiceFormState createState() => _InvoiceFormState();
@@ -22,7 +21,7 @@ class _InvoiceFormState extends State<InvoiceForm> {
 
   void _addItem() {
     setState(() {
-      items.add(InvoiceItem());
+      items.add(InvoiceItem(description: '', price: 0.00, quantity: 1));
     });
   }
 
@@ -37,11 +36,18 @@ class _InvoiceFormState extends State<InvoiceForm> {
       final invoice = Invoice(
         client: client.text,
         items: items,
-        tax: tax,
         date: DateTime.now(),
       );
       widget.onInvoiceAdded(invoice);
+
+      // Show success message
+      showSimpleNotification(const Text("Invoice added successfully"),
+          background: Colors.green);
       Navigator.pop(context);
+    } else {
+      // Show error message
+      showSimpleNotification(const Text("An error occured while saving"),
+          background: Colors.red);
     }
   }
 
@@ -90,6 +96,13 @@ class _InvoiceFormState extends State<InvoiceForm> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16.0),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _addItem,
+                  child: const Text('Add an Item +'),
+                ),
+              ),
               const SizedBox(height: 6.0),
               Flexible(
                 child: ListView.builder(
@@ -101,23 +114,6 @@ class _InvoiceFormState extends State<InvoiceForm> {
                     );
                   },
                 ),
-              ),
-              //SizedBox(height: 6.0),
-              ElevatedButton(
-                onPressed: _addItem,
-                child: const Text('Add an Item'),
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Tax',
-                ),
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  setState(() {
-                    tax = double.parse(value);
-                  });
-                },
               ),
               const SizedBox(height: 16.0),
               ElevatedButton(
